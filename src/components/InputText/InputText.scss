@@ -1,0 +1,23 @@
+.sc-inputtext {
+  display: flex;
+  flex-direction: column;
+
+  .sc-inputtext-label {
+    padding-left: 1px;
+    padding-bottom: 2px;
+    font-size: 18px;
+    max-width: 100px;
+  }
+
+  .sc-inputtext-input[type="text"] {
+    border-radius: 5px;
+    padding: 10px;
+    max-width: 200px;
+    border: 1px solid gray;
+    font-size: 18px;
+  }
+
+  > input:focus {
+    outline: 2px solid rgb(25, 118, 210);
+  }
+}
