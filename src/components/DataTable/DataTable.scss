@@ -1,0 +1,40 @@
+.sc-datatable-container {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+
+  .sc-table {
+    border-collapse: collapse;
+    width: 100%;
+
+    th,
+    td {
+      border: 1px solid #ffffff;
+      text-align: left;
+      padding: 8px;
+    }
+
+    .sc-datatable-selector-container {
+      width: 10px;
+      .sc-datatable-selector {
+        background-color: black;
+      }
+    }
+
+    .sc-tablehead {
+      > tr {
+        > th {
+          background-color: rgb(117, 201, 250);
+        }
+      }
+    }
+
+    .sc-tablebody {
+      > tr {
+        > td {
+          background-color: rgb(205, 235, 253);
+        }
+      }
+    }
+  }
+}
