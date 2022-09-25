@@ -1,6 +1,7 @@
 import React from "react";
 import { ComponentStory, ComponentMeta } from "@storybook/react";
 import DataTable from "./DataTable";
+import data from "./TestTableData.json";
 
 // More on default export: https://storybook.js.org/docs/react/writing-stories/introduction#default-export
 export default {
@@ -13,8 +14,16 @@ const Template: ComponentStory<typeof DataTable> = (args) => (
   <DataTable {...args} />
 );
 
+const activeColumns = [
+  { label: "Name", id: "fullName" },
+  { label: "Address", id: "address" },
+  { label: "Phone Number", id: "phoneNumber" },
+  { label: "Email", id: "email" },
+];
+
 export const HelloWorld = Template.bind({});
 // More on args: https://storybook.js.org/docs/react/writing-stories/args
 HelloWorld.args = {
-  label: "Hello world!",
+  data,
+  activeColumns,
 };

@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import data from "./TestTableData.json";
+import React, { useEffect, useState, useCallback } from "react";
 import CheckBox from "./CheckBox";
 import "./DataTable.scss";
 
@@ -11,20 +10,24 @@ type Columns = {
 export interface DataTableProps {
   data?: Array<Object>;
   activeColumns?: Array<Columns>;
+  setSelectedRows?: Function;
 }
 
 const DataTable = (props: DataTableProps) => {
-  const {
-    activeColumns = [
-      { label: "Name", id: "fullName" },
-      { label: "Address", id: "address" },
-      { label: "Phone Number", id: "phoneNumber" },
-      { label: "Email", id: "email" },
-    ],
-  } = props;
-  const [tableData, setTableData] = useState(data);
-  const [activeTableColumns, setColumns] = useState(activeColumns);
-  const [selectedRows, setSelectedRows] = useState<Array<Object>>([]); // need to allow optional parent props drilling so we can access these in datatable parent
+  const { activeColumns, data, setSelectedRows: propsSetSelectedRows } = props;
+  const [tableData, setTableData] = useState<Array<Object>>(data || []);
+  const [activeTableColumns, setColumns] = useState(activeColumns || []);
+  const [selectedRows, setSelectedRows] = useState<Array<Object>>([]); // TODO need to allow optional parent props drilling so we can access these in datatable parent
+  const [globalChecked, setGlobalChecked] = useState("dontCheckAll"); // dont question my string naming lol
+
+  useEffect(() => {
+    if (data) {
+      setTableData(data);
+    }
+    if (activeColumns) {
+      setColumns(activeColumns);
+    }
+  }, [data, activeColumns]);
 
   function isObject(object: Object) {
     return object != null && typeof object === "object";
@@ -51,6 +54,18 @@ const DataTable = (props: DataTableProps) => {
     return true;
   }
 
+  const selectAllRows = (selectAll?: boolean) => {
+    if (selectAll) {
+      setSelectedRows(tableData);
+      propsSetSelectedRows && propsSetSelectedRows(tableData);
+      setGlobalChecked("checkAll");
+    } else {
+      setSelectedRows([]);
+      propsSetSelectedRows && propsSetSelectedRows([]);
+      setGlobalChecked("dontCheckAll");
+    }
+  };
+
   const selectRow = (idx: number, remove?: boolean) => {
     if (remove) {
       const rowToRemove = tableData[idx];
@@ -62,6 +77,7 @@ const DataTable = (props: DataTableProps) => {
           }
         });
         setSelectedRows(newRows);
+        propsSetSelectedRows && propsSetSelectedRows(newRows);
       }
     } else {
       const newRow = tableData[idx];
@@ -69,6 +85,7 @@ const DataTable = (props: DataTableProps) => {
         const newSelection: Array<Object> = selectedRows;
         newSelection.push(newRow);
         setSelectedRows(newSelection);
+        propsSetSelectedRows && propsSetSelectedRows(newSelection);
       }
     }
   };
@@ -77,7 +94,7 @@ const DataTable = (props: DataTableProps) => {
     let rowElements: JSX.Element[] = [];
     rowElements[0] = (
       <th className="sc-datatable-selector-container">
-        <CheckBox />
+        <CheckBox selectAllRows={selectAllRows} />
       </th>
     );
     activeTableColumns.forEach((e: Columns, index) => {
@@ -88,26 +105,32 @@ const DataTable = (props: DataTableProps) => {
     return rowElements;
   };
 
-  const renderTableRows = (rowData: Object, idx: number) => {
-    let tableRow: JSX.Element[] = [];
-    tableRow[0] = (
-      <td className="sc-datatable-selector-container">
-        <CheckBox idx={idx} selectRow={selectRow} />
-      </td>
-    );
-    Object.entries(rowData).forEach(([key, value]) => {
-      if (value && typeof value === "string") {
-        activeColumns.forEach((element, index) => {
-          if (element.id === key) {
-            tableRow[index + 1] = <td>{value}</td>;
-          }
-        });
-      }
-    });
+  const renderTableRows = useCallback(
+    (rowData: any, idx: number) => {
+      let tableRow: JSX.Element[] = [];
+      tableRow[0] = (
+        <td className="sc-datatable-selector-container">
+          <CheckBox
+            idx={idx}
+            selectRow={selectRow}
+            globalChecked={globalChecked}
+          />
+        </td>
+      );
+      Object.entries(rowData).forEach(([key, value]) => {
+        if (value && typeof value === "string") {
+          activeTableColumns.forEach((element, index) => {
+            if (element.id === key) {
+              tableRow[index + 1] = <td>{value}</td>;
+            }
+          });
+        }
+      });
 
-    return tableRow;
-  };
-
+      return tableRow;
+    },
+    [globalChecked, activeTableColumns]
+  );
   return (
     <div className="sc-datatable-container">
       <table className="sc-table">
