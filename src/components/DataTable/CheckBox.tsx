@@ -1,20 +1,15 @@
 import React, { ChangeEventHandler } from "react";
 
 const CheckBox = (props: any) => {
-  const { idx, selectRow, selectAllRows, globalChecked } = props;
+  const { idx, selectRow, selectAllRows, tableData, isHeader } = props;
+  const currentTableRow = tableData?.[idx];
 
   const handleChange = (e: { target: { checked: any } }) => {
-    if (globalChecked !== "checkAll") {
-      if (e?.target.checked) {
-        selectRow ? selectRow(idx) : selectAllRows(true);
-      } else {
-        selectRow ? selectRow(idx, true) : selectAllRows(false); // tell the method to remove this element
-      }
-    }
+    selectRow ? selectRow(idx) : selectAllRows(e.target.checked);
   };
   return (
     <input
-      checked={globalChecked === "checkAll" ? true : props.checked}
+      checked={isHeader ? props.checked : currentTableRow?.isChecked}
       className="sc-datatable-selector"
       onChange={handleChange}
       type="checkbox"

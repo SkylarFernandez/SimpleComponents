@@ -7,22 +7,26 @@ type Columns = {
   id: string;
 };
 
+export interface RowData {
+  [key: string]: unknown;
+}
 export interface DataTableProps {
-  data?: Array<Object>;
+  data?: Array<RowData>;
   activeColumns?: Array<Columns>;
-  setSelectedRows?: Function;
+  selectedRows?: Function;
 }
 
 const DataTable = (props: DataTableProps) => {
-  const { activeColumns, data, setSelectedRows: propsSetSelectedRows } = props;
-  const [tableData, setTableData] = useState<Array<Object>>(data || []);
+  const { activeColumns, data, selectedRows: propsSelectedRows } = props;
+  const [tableData, setTableData] = useState<Array<RowData>>(data || []);
   const [activeTableColumns, setColumns] = useState(activeColumns || []);
-  const [selectedRows, setSelectedRows] = useState<Array<Object>>([]); // TODO need to allow optional parent props drilling so we can access these in datatable parent
-  const [globalChecked, setGlobalChecked] = useState("dontCheckAll"); // dont question my string naming lol
-
   useEffect(() => {
     if (data) {
-      setTableData(data);
+      const newTableData = JSON.parse(JSON.stringify(data));
+      newTableData.forEach((e: RowData) => {
+        e.isChecked = false;
+      });
+      setTableData(newTableData);
     }
     if (activeColumns) {
       setColumns(activeColumns);
@@ -55,51 +59,105 @@ const DataTable = (props: DataTableProps) => {
   }
 
   const selectAllRows = (selectAll?: boolean) => {
-    if (selectAll) {
-      setSelectedRows(tableData);
-      propsSetSelectedRows && propsSetSelectedRows(tableData);
-      setGlobalChecked("checkAll");
-    } else {
-      setSelectedRows([]);
-      propsSetSelectedRows && propsSetSelectedRows([]);
-      setGlobalChecked("dontCheckAll");
+    const copyData: Array<RowData> = JSON.parse(JSON.stringify(tableData));
+    copyData.forEach((e) => {
+      e.isChecked = selectAll;
+    });
+    setTableData(copyData);
+    propsSelectedRows && propsSelectedRows(selectAll ? copyData : []);
+  };
+
+  const selectRow = (idx: number) => {
+    const copyData: Array<RowData> = JSON.parse(JSON.stringify(tableData));
+    if (copyData[idx]) {
+      copyData[idx].isChecked = !copyData[idx].isChecked;
+      let newRows: Array<RowData> = [];
+      copyData.forEach((e) => {
+        if (e.isChecked) newRows.push(e);
+      });
+      setTableData(copyData);
+      propsSelectedRows && propsSelectedRows(newRows);
     }
   };
 
-  const selectRow = (idx: number, remove?: boolean) => {
-    if (remove) {
-      const rowToRemove = tableData[idx];
-      if (rowToRemove !== undefined) {
-        let newRows = selectedRows;
-        selectedRows.map((element, index) => {
-          if (isEqual(rowToRemove, element)) {
-            newRows.splice(index, 1);
-          }
-        });
-        setSelectedRows(newRows);
-        propsSetSelectedRows && propsSetSelectedRows(newRows);
+  const colSortAsc = (colId: string) => {
+    const dataCopy = [...tableData];
+    const checkCellDataType = typeof dataCopy?.[0]?.[colId];
+    if (checkCellDataType === "number") {
+      try {
+        // if its a number use a-b sorting
+        dataCopy.sort((a, b) => (a[colId] as number) - (b[colId] as number));
+      } catch (e) {
+        console.error("Could not sort column as numbers", e);
       }
     } else {
-      const newRow = tableData[idx];
-      if (newRow !== undefined) {
-        const newSelection: Array<Object> = selectedRows;
-        newSelection.push(newRow);
-        setSelectedRows(newSelection);
-        propsSetSelectedRows && propsSetSelectedRows(newSelection);
+      try {
+        dataCopy.sort((a, b) => {
+          // ignore case
+          const aLower = (a[colId] as string)?.toUpperCase();
+          const bLower = (b[colId] as string)?.toUpperCase();
+
+          return aLower.localeCompare(bLower);
+        }); // if its a string use default sort
+      } catch (e) {
+        console.error("Could not sort column as strings", e);
       }
     }
+    setTableData(dataCopy);
+    propsSelectedRows && propsSelectedRows([]);
+  };
+
+  const colSortDes = (colId: string) => {
+    const dataCopy = [...tableData];
+    const checkCellDataType = typeof dataCopy?.[0]?.[colId];
+    if (checkCellDataType === "number") {
+      try {
+        // if its a number use a-b sorting
+        dataCopy.sort((a, b) => (b[colId] as number) - (a[colId] as number));
+      } catch (e) {
+        console.error("Could not sort column as numbers", e);
+      }
+    } else {
+      try {
+        dataCopy.sort((a, b) => {
+          // ignore case
+          const aLower = (a[colId] as string)?.toUpperCase();
+          const bLower = (b[colId] as string)?.toUpperCase();
+
+          return bLower.localeCompare(aLower);
+        }); // if its a string use default sort
+      } catch (e) {
+        console.error("Could not sort column as strings", e);
+      }
+    }
+    setTableData(dataCopy);
+    propsSelectedRows && propsSelectedRows([]);
   };
 
   const renderHeader = () => {
     let rowElements: JSX.Element[] = [];
     rowElements[0] = (
       <th className="sc-datatable-selector-container">
-        <CheckBox selectAllRows={selectAllRows} />
+        <CheckBox
+          selectAllRows={selectAllRows}
+          tableData={tableData}
+          isHeader
+        />
       </th>
     );
     activeTableColumns.forEach((e: Columns, index) => {
       if (typeof e.label === "string") {
-        rowElements[index + 1] = <th>{e.label}</th>;
+        rowElements[index + 1] = (
+          <th>
+            <div className="sc-datatable-header-contents">
+              {e.label}
+              <div className="sc-datatable-sort-buttons">
+                <button onClick={() => colSortAsc(e.id)}>▲</button>
+                <button onClick={() => colSortDes(e.id)}>▼</button>
+              </div>
+            </div>
+          </th>
+        );
       }
     });
     return rowElements;
@@ -110,11 +168,7 @@ const DataTable = (props: DataTableProps) => {
       let tableRow: JSX.Element[] = [];
       tableRow[0] = (
         <td className="sc-datatable-selector-container">
-          <CheckBox
-            idx={idx}
-            selectRow={selectRow}
-            globalChecked={globalChecked}
-          />
+          <CheckBox idx={idx} selectRow={selectRow} tableData={tableData} />
         </td>
       );
       Object.entries(rowData).forEach(([key, value]) => {
@@ -129,7 +183,7 @@ const DataTable = (props: DataTableProps) => {
 
       return tableRow;
     },
-    [globalChecked, activeTableColumns]
+    [activeTableColumns, tableData]
   );
   return (
     <div className="sc-datatable-container">
@@ -138,8 +192,8 @@ const DataTable = (props: DataTableProps) => {
           <tr>{renderHeader()}</tr>
         </thead>
         <tbody className="sc-tablebody">
-          {tableData.map((tableData, index) => (
-            <tr>{renderTableRows(tableData, index)}</tr>
+          {tableData.map((tableRow, index) => (
+            <tr>{renderTableRows(tableRow, index)}</tr>
           ))}
         </tbody>
       </table>

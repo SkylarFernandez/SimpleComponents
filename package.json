@@ -3,7 +3,7 @@
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/SkylarFernandez"
   },
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A simple component library to practice my coding",
   "scripts": {
     "test": "jest",
