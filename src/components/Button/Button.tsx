@@ -46,7 +46,7 @@ const Button = (props: ButtonProps) => {
       ) : (
         ""
       )}
-      <text className="sc-button-label">{label}</text>
+      <label className="sc-button-label">{label}</label>
     </button>
   );
 };

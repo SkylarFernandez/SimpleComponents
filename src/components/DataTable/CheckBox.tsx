@@ -1,7 +1,8 @@
 import React, { ChangeEventHandler } from "react";
 
 const CheckBox = (props: any) => {
-  const { idx, selectRow, selectAllRows, tableData, isHeader } = props;
+  const { idx, selectRow, selectAllRows, tableData, isHeader, className } =
+    props;
   const currentTableRow = tableData?.[idx];
 
   const handleChange = (e: { target: { checked: any } }) => {
@@ -10,7 +11,7 @@ const CheckBox = (props: any) => {
   return (
     <input
       checked={isHeader ? props.checked : currentTableRow?.isChecked}
-      className="sc-datatable-selector"
+      className={className ?? "sc-datatable-selector"}
       onChange={handleChange}
       type="checkbox"
     />

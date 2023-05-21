@@ -13,11 +13,11 @@ export interface RowData {
 export interface DataTableProps {
   data?: Array<RowData>;
   activeColumns?: Array<Columns>;
-  selectedRows?: Function;
+  getSelectedRows?: Function;
 }
 
 const DataTable = (props: DataTableProps) => {
-  const { activeColumns, data, selectedRows: propsSelectedRows } = props;
+  const { activeColumns, data, getSelectedRows: propsGetSelectedRows } = props;
   const [tableData, setTableData] = useState<Array<RowData>>(data || []);
   const [activeTableColumns, setColumns] = useState(activeColumns || []);
   useEffect(() => {
@@ -33,38 +33,13 @@ const DataTable = (props: DataTableProps) => {
     }
   }, [data, activeColumns]);
 
-  function isObject(object: Object) {
-    return object != null && typeof object === "object";
-  }
-
-  // courtesy of https://medium.com/geekculture/object-equality-in-javascript-2571f609386e
-  function isEqual(obj1: Object, obj2: Object) {
-    var props1 = Object.getOwnPropertyNames(obj1);
-    var props2 = Object.getOwnPropertyNames(obj2);
-    if (props1.length != props2.length) {
-      return false;
-    }
-    for (var i = 0; i < props1.length; i++) {
-      let val1 = obj1[props1[i] as keyof typeof obj1];
-      let val2 = obj2[props1[i] as keyof typeof obj2];
-      let isObjects = isObject(val1) && isObject(val2);
-      if (
-        (isObjects && !isEqual(val1, val2)) ||
-        (!isObjects && val1 !== val2)
-      ) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   const selectAllRows = (selectAll?: boolean) => {
     const copyData: Array<RowData> = JSON.parse(JSON.stringify(tableData));
     copyData.forEach((e) => {
       e.isChecked = selectAll;
     });
     setTableData(copyData);
-    propsSelectedRows && propsSelectedRows(selectAll ? copyData : []);
+    propsGetSelectedRows && propsGetSelectedRows(selectAll ? copyData : []);
   };
 
   const selectRow = (idx: number) => {
@@ -76,7 +51,7 @@ const DataTable = (props: DataTableProps) => {
         if (e.isChecked) newRows.push(e);
       });
       setTableData(copyData);
-      propsSelectedRows && propsSelectedRows(newRows);
+      propsGetSelectedRows && propsGetSelectedRows(newRows);
     }
   };
 
@@ -104,7 +79,7 @@ const DataTable = (props: DataTableProps) => {
       }
     }
     setTableData(dataCopy);
-    propsSelectedRows && propsSelectedRows([]);
+    propsGetSelectedRows && propsGetSelectedRows([]);
   };
 
   const colSortDes = (colId: string) => {
@@ -131,7 +106,7 @@ const DataTable = (props: DataTableProps) => {
       }
     }
     setTableData(dataCopy);
-    propsSelectedRows && propsSelectedRows([]);
+    propsGetSelectedRows && propsGetSelectedRows([]);
   };
 
   const renderHeader = () => {
@@ -139,6 +114,7 @@ const DataTable = (props: DataTableProps) => {
     rowElements[0] = (
       <th className="sc-datatable-selector-container">
         <CheckBox
+          className="selectAllCheckbox"
           selectAllRows={selectAllRows}
           tableData={tableData}
           isHeader
